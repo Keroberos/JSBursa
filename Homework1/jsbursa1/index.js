@@ -1,5 +1,5 @@
 //Ваш код будет здесь
-window.addEventListener('load', onWindowLoadHandler);
+window.addEventListener('load', onWindowLoadHandler); // Execute code when window will be loaded
 var lastTurn; // Gets the last turn - X or O
 var endGame; // Indicate whether the game is over
 var cellList; // Contains the list of cells
@@ -15,9 +15,8 @@ function SubscribeOnEvents() {
     var button = document.querySelector('.startNewGame');
     button.addEventListener('click', OnStartButtonClicked);
 
-    for (i = 0; i < cellList.length; ++i) {
-        cellList[i].addEventListener('click', OnCellClicked);;
-    }
+    var field = document.querySelector('.field');
+    field.addEventListener('click', OnCellClicked);
 }
 
 // Start button click event handler
@@ -30,7 +29,7 @@ function OnStartButtonClicked() {
 // Some cell click event handler
 function OnCellClicked(e) {
     // There is no need to do anything if the game is over or cell is not empty
-    if (endGame || e.target.classList.contains('x') || e.target.classList.contains('y')) {
+    if (endGame || e.target.classList.contains('x') || e.target.classList.contains('y') || !e.target.classList.contains('cell')) {
         return;
     }
 
@@ -89,6 +88,7 @@ function ClearField() {
     for (i = 0; i < cellList.length; ++i) {
         ClearCell(cellList[i]);
     }
+
     ShowWinnerMessage(null);
 }
 
