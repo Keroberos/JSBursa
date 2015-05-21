@@ -1,5 +1,4 @@
-//Ваш код будет здесь
-window.addEventListener('load', onWindowLoadHandler); // Execute code when window will be loaded
+﻿window.addEventListener('load', onWindowLoadHandler); // Execute code when window will be loaded
 var lastTurn; // Gets the last turn - X or O
 var endGame; // Indicate whether the game is over
 var cellList; // Contains the list of cells
@@ -29,7 +28,7 @@ function OnStartButtonClicked() {
 // Some cell click event handler
 function OnCellClicked(e) {
     // There is no need to do anything if the game is over or cell is not empty
-    if (endGame || e.target.classList.contains('x') || e.target.classList.contains('y') || !e.target.classList.contains('cell')) {
+    if (endGame || e.target.classList.contains('x') || e.target.classList.contains('o') || !e.target.classList.contains('cell')) {
         return;
     }
 
@@ -94,6 +93,5 @@ function ClearField() {
 
 // Clears cell
 function ClearCell(cell) {
-    cell.classList.remove('x');
-    cell.classList.remove('o');
+    cell.classList.remove('x','o');
 }
