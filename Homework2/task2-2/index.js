@@ -1,35 +1,70 @@
 var firstInputTextBox;
 var secondInputTextBox;
+var calculateButton;
 var body;
 
+function getDivError() {
+  'use strict';
+  var divError = document.createElement('div');
+  divError.classList.add('error-message');
+  divError.innerHTML = 'Это не число';
+  return divError;
+}
+
+function removeElement(elementSelector) {
+  'use strict';
+  var oldResult = document.querySelector(elementSelector);
+  if (oldResult !== null) {
+    body.removeChild(oldResult);
+  }
+}
+
+function onCalculate() {
+  'use strict';
+  var firstNumber = +firstInputTextBox.value;
+  var secondNumber = +secondInputTextBox.value;
+  var hasError = false;
+  var divResult;
+
+  removeElement('#result');
+  removeElement('.error-message');
+  removeElement('.error-message');
+
+  if (isNaN(firstNumber)) {
+    body.insertBefore(getDivError(), secondInputTextBox);
+    hasError = true;
+  }
+
+  if (isNaN(secondNumber)) {
+    body.insertBefore(getDivError(), calculateButton);
+    hasError = true;
+  }
+
+  if (!hasError) {
+    divResult = document.createElement('div');
+    divResult.id = 'result';
+    divResult.innerHTML = firstNumber + secondNumber;
+
+    body.appendChild(divResult);
+  }
+}
+
 function onLoad() {
+  'use strict';
   body = document.querySelector('body');
+
   firstInputTextBox = document.createElement('input');
+  firstInputTextBox.style.display = 'block';
   secondInputTextBox = document.createElement('input');
-  var calculateButton = document.createElement('button');
+  secondInputTextBox.style.display = 'block';
+  calculateButton = document.createElement('button');
+
   calculateButton.innerHTML = 'Посчитать';
   calculateButton.onclick = onCalculate;
 
   body.appendChild(firstInputTextBox);
   body.appendChild(secondInputTextBox);
   body.appendChild(calculateButton);
-}
-
-function onCalculate() {
-  var firstNumber = firstInputTextBox.value;
-  if (isNaN(+firstNumber)) {
-    var divError = document.createElement('div');
-    divError.innerHTML='Это не число';
-    body.insertBefore(divError,secondInputTextBox);
-    return;
-  }
-
-  var divResult = document.createElement('div');
-  divResult.id = 'result';
-  divResult.innerHTML = '123';
-
-  body.appendChild(divResult);
-
 }
 
 window.addEventListener('load', onLoad);
