@@ -3,6 +3,12 @@ var secondInputTextBox;
 var calculateButton;
 var body;
 
+function isNumeric(input) {
+  'use strict';
+  var RE = /^-{0,1}\d*\.{0,1}\d+$/;
+  return (RE.test(input));
+}
+
 function getDivError() {
   'use strict';
   var divError = document.createElement('div');
@@ -30,12 +36,12 @@ function onCalculate() {
   removeElement('.error-message');
   removeElement('.error-message');
 
-  if (isNaN(firstNumber)) {
+  if (!isNumeric(firstInputTextBox.value)) {
     body.insertBefore(getDivError(), secondInputTextBox);
     hasError = true;
   }
 
-  if (isNaN(secondNumber)) {
+  if (!isNumeric(secondInputTextBox.value)) {
     body.insertBefore(getDivError(), calculateButton);
     hasError = true;
   }

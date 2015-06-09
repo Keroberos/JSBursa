@@ -1,11 +1,12 @@
+/*global getWinner */
+
 var fieldSizeInput;
 var errorDiv;
 var startMenuDiv;
 var fieldDiv;
 var winnerMessageDiv;
 var mainGame;
-
-var cellList; // Contains the list of cells
+var cellList;
 
 var model =
 {
@@ -15,6 +16,24 @@ var model =
   lastTurn: 'o',
   winnerMessage: ''
 };
+
+function getModelCell(x, y) {
+  'use strict';
+  var j;
+  var cell;
+  var cellX;
+  var cellY;
+
+  for (j = 0; j < model.cellList.length; j++) {
+    cell = model.cellList[j];
+    cellX = cell.x;
+    cellY = cell.y;
+
+    if (cellX === x && cellY === y) {
+      return cell;
+    }
+  }
+}
 
 function saveGame() {
   'use strict';
@@ -34,15 +53,6 @@ function restoreCells() {
     if (modelValue !== '') {
       cell.classList.add(modelValue);
     }
-  }
-}
-
-function loadGame() {
-  'use strict';
-  var data = localStorage.getItem('game');
-  if (data !== null) {
-    model = JSON.parse(data);
-    changeState();
   }
 }
 
@@ -94,12 +104,13 @@ function buildFieldDiv() {
   var i;
   var j;
   var cell;
+  var rowDiv;
 
   fieldDiv.innerHTML = '';
   cellList = [];
 
   for (j = 0; j < model.fieldSize; j++) {
-    var rowDiv = document.createElement('div');
+    rowDiv = document.createElement('div');
     rowDiv.classList.add('row');
 
     for (i = 0; i < model.fieldSize; i++) {
@@ -112,7 +123,7 @@ function buildFieldDiv() {
       model.cellList.push({x: i.toString(), y: j.toString(), value: ''});
     }
 
-    fieldDiv.appendChild(rowDiv)
+    fieldDiv.appendChild(rowDiv);
   }
 
   return rowDiv;
@@ -143,6 +154,11 @@ function changeState() {
       mainGame.style.display = 'none';
       break;
     }
+
+    default:
+    {
+      break;
+    }
   }
   saveGame();
 }
@@ -156,6 +172,8 @@ function onGenerateFieldButton() {
     return;
   }
 
+  errorDiv.innerHTML = '';
+
   model.gameStatus = 'gameStarted';
   model.fieldSize = fieldSize;
 
@@ -163,24 +181,11 @@ function onGenerateFieldButton() {
   changeState();
 }
 
-function getModelCell(x, y) {
-  'use strict';
-  var j;
-  for (j = 0; j < model.cellList.length; j++) {
-    var cell = model.cellList[j];
-    var cellX = cell.x;
-    var cellY = cell.y;
-
-    if (cellX === x && cellY === y) {
-      return cell;
-    }
-  }
-}
-
 function onCellClicked(e) {
   'use strict';
   var currentTurn;
   var cell = e.target;
+  var cellModel;
 
   // There is no need to do anything if the game is over or cell is not empty
   if (model.gameStatus !== 'gameStarted' || cell.classList.contains('x') || cell.classList.contains('o') || !cell.classList.contains('cell')) {
@@ -198,7 +203,7 @@ function onCellClicked(e) {
   cell.classList.add(currentTurn);
   model.lastTurn = currentTurn;
 
-  var cellModel = getModelCell(cell.getAttribute('x'), cell.getAttribute('y'));
+  cellModel = getModelCell(cell.getAttribute('x'), cell.getAttribute('y'));
   cellModel.value = currentTurn;
 
   checkEndGame();
@@ -209,6 +214,15 @@ function onStartNewGameButton() {
   'use strict';
   model.gameStatus = 'notStarted';
   changeState();
+}
+
+function loadGame() {
+  'use strict';
+  var data = localStorage.getItem('game');
+  if (data !== null) {
+    model = JSON.parse(data);
+    changeState();
+  }
 }
 
 function onLoad() {
