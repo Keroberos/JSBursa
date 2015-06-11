@@ -2,10 +2,12 @@ var script;
 var contentPresenter;
 
 function callback(data) {
+    'use strict';
     contentPresenter.innerHTML = data.parse.text['*'];
 }
 
 function onClick() {
+    'use strict';
     var title = document.querySelector('input').value;
 
     if (script !== null && script !== undefined) {
