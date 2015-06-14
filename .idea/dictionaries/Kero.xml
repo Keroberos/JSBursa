@@ -2,6 +2,7 @@
   <dictionary name="Kero">
     <words>
       <w>keypress</w>
+      <w>readystatechange</w>
     </words>
   </dictionary>
 </component>

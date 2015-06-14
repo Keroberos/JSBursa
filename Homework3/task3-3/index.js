@@ -3,6 +3,7 @@ var createNewGameButton;
 var existingGamesList;
 var webSocket;
 var statusDiv;
+var statusGameDiv;
 var myGameId;
 var myPlayerId;
 var fieldDiv;
@@ -14,18 +15,49 @@ var side;
 var enemySide;
 var cellList = [];
 
+var states =
+{
+  waitActionState: 'waitActionState',
+  gameEndedState: 'gameEndedState'
+};
+
 function showStatusMessage(message) {
   'use strict';
   statusDiv.style.display = 'block';
   statusDiv.innerHTML = message;
+  statusGameDiv.innerHTML = message;
   console.log(message);
+}
+
+function changeState(newState) {
+  'use strict';
+  switch (newState) {
+    case states.waitActionState:
+    {
+      startGameDiv.style.display = 'block';
+      mainGameDiv.style.display = 'none';
+      createNewGameButton.disabled = false;
+      gameInProgress = false;
+      showStatusMessage('');
+      break;
+    }
+    case states.gameEndedState:
+    {
+      gameInProgress = false;
+      newGameButton.innerHTML = 'Новая игра';
+      break;
+    }
+    default :
+    {
+      break;
+    }
+  }
 }
 
 function endGame(message) {
   'use strict';
   showStatusMessage(message);
-  gameInProgress = false;
-  newGameButton.innerHTML = 'Новая игра';
+  changeState(states.gameEndedState);
 }
 
 function registerOnGame(gameId) {
@@ -40,17 +72,7 @@ function onClickOnGame(e) {
   registerOnGame(gameId);
 }
 
-function addGame(gameInfo) {
-  'use strict';
-  var newElementList;
-  newElementList = document.createElement('li');
-  newElementList.innerHTML = gameInfo.id;
-  newElementList.dataset.id = gameInfo.id;
-  existingGamesList.insertBefore(newElementList, existingGamesList.childNodes[0]);
-  newElementList.addEventListener('click', onClickOnGame);
-  // var id = gameInfo.id;
-  // setTimeout(function(){registerOnGame(id);},1000);
-}
+// region GameProcess
 
 function getCellById(cellId) {
   'use strict';
@@ -72,44 +94,6 @@ function markCell(cellId, currentMove) {
   cell.classList.add(currentMove);
 }
 
-function removeGame(gameInfo) {
-  'use strict';
-  var allElements = document.querySelectorAll('li');
-  var i;
-  for (i = 0; i < allElements.length; i++) {
-    if (allElements[i].dataset.id === gameInfo.id) {
-      existingGamesList.removeChild(allElements[i]);
-      return;
-    }
-  }
-}
-
-function buildFieldDiv(size) {
-  'use strict';
-  var i;
-  var j;
-  var cell;
-  var rowDiv;
-
-  fieldDiv.innerHTML = '';
-  cellList = [];
-
-  for (j = 0; j < size; j++) {
-    rowDiv = document.createElement('div');
-    rowDiv.classList.add('row');
-
-    for (i = 1; i < size + 1; i++) {
-      cell = document.createElement('div');
-      cell.classList.add('cell');
-      cell.dataset.id = j * 10 + i;
-      rowDiv.appendChild(cell);
-      cellList.push(cell);
-    }
-
-    fieldDiv.appendChild(rowDiv);
-  }
-}
-
 function waitMove() {
   'use strict';
   var moveRequest;
@@ -123,7 +107,14 @@ function waitMove() {
   moveRequest.setRequestHeader('Game-ID', myGameId.toString());
   moveRequest.setRequestHeader('Player-ID', myPlayerId.toString());
   moveRequest.setRequestHeader('Content-Type', 'application/json');
-  moveRequest.send();
+
+  try {
+    moveRequest.send();
+  } catch (e) {
+    console.log(e);
+    waitMove();
+  }
+
   moveRequest.addEventListener('load', function onLoad() {
     var data;
     if (moveRequest.status !== 200) {
@@ -146,16 +137,6 @@ function waitMove() {
 
     waitMove();
   });
-}
-
-function showGame() {
-  'use strict';
-  newGameButton.innerHTML = 'Сдаться';
-  gameInProgress = true;
-  startGameDiv.style.display = 'none';
-  mainGameDiv.style.display = 'block';
-  buildFieldDiv(10);
-  waitMove();
 }
 
 function makeMove(cellId) {
@@ -193,6 +174,81 @@ function makeMove(cellId) {
   });
 }
 
+function onCellClicked(e) {
+  'use strict';
+  var cell = e.target;
+
+  // There is no need to do anything if the game is over or cell is not empty
+  if (cell.classList.contains('x') || cell.classList.contains('o') || !cell.classList.contains('cell')) {
+    return;
+  }
+
+  makeMove(cell.dataset.id);
+}
+
+function buildFieldDiv(size) {
+  'use strict';
+  var i;
+  var j;
+  var cell;
+  var rowDiv;
+
+  fieldDiv.innerHTML = '';
+  cellList = [];
+
+  for (j = 0; j < size; j++) {
+    rowDiv = document.createElement('div');
+    rowDiv.classList.add('row');
+
+    for (i = 1; i < size + 1; i++) {
+      cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.dataset.id = j * 10 + i;
+      rowDiv.appendChild(cell);
+      cellList.push(cell);
+    }
+
+    fieldDiv.appendChild(rowDiv);
+  }
+}
+
+function showGame() {
+  'use strict';
+  newGameButton.innerHTML = 'Сдаться';
+  gameInProgress = true;
+  startGameDiv.style.display = 'none';
+  mainGameDiv.style.display = 'block';
+  buildFieldDiv(10);
+  waitMove();
+}
+
+// endregion
+
+// region WebSocketMessages
+function addGame(gameInfo) {
+  'use strict';
+  var newElementList;
+  newElementList = document.createElement('li');
+  newElementList.innerHTML = gameInfo.id;
+  newElementList.dataset.id = gameInfo.id;
+  existingGamesList.insertBefore(newElementList, existingGamesList.childNodes[0]);
+  newElementList.addEventListener('click', onClickOnGame);
+  // var id = gameInfo.id;
+  // setTimeout(function(){registerOnGame(id);},1000);
+}
+
+function removeGame(gameInfo) {
+  'use strict';
+  var allElements = document.querySelectorAll('li');
+  var i;
+  for (i = 0; i < allElements.length; i++) {
+    if (allElements[i].dataset.id === gameInfo.id) {
+      existingGamesList.removeChild(allElements[i]);
+      return;
+    }
+  }
+}
+
 function beginGame(gameInfo) {
   'use strict';
   var startGameRequest;
@@ -224,7 +280,7 @@ function beginGame(gameInfo) {
     }
 
     side = JSON.parse(startGameRequest.responseText).side;
-    alert(side);
+    showStatusMessage('Вы ходите ' + side);
     enemySide = side === 'x' ? 'o' : 'x';
     showGame();
   });
@@ -264,6 +320,7 @@ function connectWebSocket() {
     }
   });
 }
+// endregion
 
 function onCreateNewGame() {
   'use strict';
@@ -290,21 +347,11 @@ function onCreateNewGame() {
   });
 }
 
-function onCellClicked(e) {
-  'use strict';
-  var cell = e.target;
-
-  // There is no need to do anything if the game is over or cell is not empty
-  if (cell.classList.contains('x') || cell.classList.contains('o') || !cell.classList.contains('cell')) {
-    return;
-  }
-
-  makeMove(cell.dataset.id);
-}
-
 function onNewGameClicked() {
   'use strict';
-  var surrenderRequest = new XMLHttpRequest();
+  var surrenderRequest;
+
+  surrenderRequest = new XMLHttpRequest();
   surrenderRequest.open('PUT', gameUrls.surrender);
   surrenderRequest.setRequestHeader('Game-ID', myGameId.toString());
   surrenderRequest.setRequestHeader('Player-ID', myPlayerId.toString());
@@ -314,8 +361,7 @@ function onNewGameClicked() {
 
   surrenderRequest.addEventListener('load', function onSurrender() {
     if (surrenderRequest.status === 200) {
-      startGameDiv.style.display = 'block';
-      mainGameDiv.style.display = 'none';
+      changeState(states.waitActionState);
     } else {
       showStatusMessage(surrenderRequest.status + surrenderRequest.statusText);
     }
@@ -329,7 +375,8 @@ window.addEventListener('load', function onLoad() {
   createNewGameButton.addEventListener('click', onCreateNewGame);
 
   existingGamesList = document.querySelector('.existing-games');
-  statusDiv = document.querySelector('.status-message');
+  statusDiv = document.querySelectorAll('.status-message')[0];
+  statusGameDiv = document.querySelectorAll('.status-message')[1];
   fieldDiv = document.querySelector('.field');
   startGameDiv = document.querySelector('.startGame');
   mainGameDiv = document.querySelector('.mainGame');
