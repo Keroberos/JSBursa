@@ -11,16 +11,18 @@ function call(methodName, label, callbackFunction) {
   }
 
   xhr.addEventListener('readystatechange', function onStatusChanged() {
+    var data;
     result = false;
-    if (xhr.readyState === xhr.DONE) {
-      if (xhr.status === 200) {
-        result = JSON.parse(xhr.responseText);
-        if (result.status === 'ok') {
-          result = true;
-        }
-      }
-      callbackFunction(result, label);
+    if (xhr.readyState !== xhr.DONE) {
+      return;
     }
+    if (xhr.status === 200) {
+      data = JSON.parse(xhr.responseText);
+      if (data !== null && data !== undefined && data.status === 'ok') {
+        result = true;
+      }
+    }
+    callbackFunction(result, label);
   });
 }
 
