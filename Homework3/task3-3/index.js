@@ -17,8 +17,13 @@ var cellList = [];
 
 var states =
 {
-  waitActionState: 'waitActionState',
-  gameEndedState: 'gameEndedState'
+waitActionState: 'waitActionState',
+gameEndedState: 'gameEndedState',
+errorNewGameState: 'errorNewGameState',
+creatingNewGameState: 'creatingNewGameState',
+gameReadyErrorState: 'gameReadyErrorState',
+gameStartedState: 'gameStartedState',
+moveErrorState: 'moveErrorState'
 };
 
 function showStatusMessage(message) {
@@ -26,28 +31,61 @@ function showStatusMessage(message) {
   statusDiv.style.display = 'block';
   statusDiv.innerHTML = message;
   statusGameDiv.innerHTML = message;
-  console.log(message);
 }
 
 function changeState(newState) {
   'use strict';
   switch (newState) {
-    case states.waitActionState:
+  case states.waitActionState:
     {
-      startGameDiv.style.display = 'block';
-      mainGameDiv.style.display = 'none';
+      startGameDiv.removeAttribute('style');
+      mainGameDiv.removeAttribute('style');
       createNewGameButton.disabled = false;
       gameInProgress = false;
       showStatusMessage('');
       break;
     }
-    case states.gameEndedState:
+  case states.gameEndedState:
     {
       gameInProgress = false;
       newGameButton.innerHTML = 'Новая игра';
       break;
     }
-    default :
+  case states.errorNewGameState:
+    {
+      showStatusMessage('Ошибка создания игры');
+      createNewGameButton.disabled = false;
+      break;
+    }
+  case states.creatingNewGameState:
+    {
+      showStatusMessage('Ожидаем начала игры');
+      createNewGameButton.disabled = true;
+      break;
+    }
+  case states.gameReadyErrorState:
+    {
+      myGameId = null;
+      myPlayerId = null;
+      createNewGameButton.disabled = false;
+      gameInProgress = false;
+      break;
+    }
+  case states.gameStartedState:
+    {
+      newGameButton.innerHTML = 'Сдаться';
+      gameInProgress = true;
+      startGameDiv.style.display = 'none';
+      mainGameDiv.style.display = 'block';
+      break;
+    }
+  case states.moveErrorState:
+    {
+      gameInProgress = false;
+      newGameButton.innerHTML = 'Новая игра';
+      break;
+    }
+  default :
     {
       break;
     }
@@ -111,7 +149,6 @@ function waitMove() {
   try {
     moveRequest.send();
   } catch (e) {
-    console.log(e);
     waitMove();
   }
 
@@ -127,15 +164,11 @@ function waitMove() {
 
     if (data.move !== undefined && data.move !== null) {
       markCell(data.move, enemySide);
-      return;
     }
 
     if (data.win !== undefined) {
       endGame(data.win);
-      return;
     }
-
-    waitMove();
   });
 }
 
@@ -152,20 +185,34 @@ function makeMove(cellId) {
   moveRequest.setRequestHeader('Game-ID', myGameId.toString());
   moveRequest.setRequestHeader('Player-ID', myPlayerId.toString());
   moveRequest.setRequestHeader('Content-Type', 'application/json');
-  moveRequest.send(JSON.stringify({move: cellId}));
+  try {
+    moveRequest.send(JSON.stringify({move: cellId}));
+  } catch(e) {
+    changeState(states.moveErrorState);
+  }
+
   moveRequest.addEventListener('load', function onLoad() {
-    var message;
+    var data = JSON.parse(moveRequest.responseText);
     if (moveRequest.status !== 200) {
-      showStatusMessage(moveRequest.status);
+      if (data.message !== undefined && data.message !== null) {
+        showStatusMessage(data.message);
+        waitMove();
+      } else {
+        if (data.win !== undefined && data.win !== null) {
+          endGame(data.win);
+          return;
+        }
+        showStatusMessage('Неизвестная ошибка');
+        changeState(states.moveErrorState);
+      }
       return;
     }
 
-    message = JSON.parse(moveRequest.responseText);
     markCell(cellId, side);
 
-    if (message !== null && message !== undefined) {
-      if (message.win !== undefined) {
-        endGame(message.win);
+    if (data !== null) {
+      if (data.win !== undefined) {
+        endGame(data.win);
         return;
       }
     }
@@ -214,10 +261,7 @@ function buildFieldDiv(size) {
 
 function showGame() {
   'use strict';
-  newGameButton.innerHTML = 'Сдаться';
-  gameInProgress = true;
-  startGameDiv.style.display = 'none';
-  mainGameDiv.style.display = 'block';
+  changeState(states.gameStartedState);
   buildFieldDiv(10);
   waitMove();
 }
@@ -264,18 +308,19 @@ function beginGame(gameInfo) {
   try {
     startGameRequest.send(dataToSend);
   } catch (e) {
-    showStatusMessage(e);
+    changeState(states.gameReadyErrorState);
   }
 
   startGameRequest.addEventListener('load', function onLoad() {
     if (startGameRequest.status === 410) {
       showStatusMessage('Ошибка старта игры: другой игрок не ответил');
+      changeState(states.gameReadyErrorState);
       return;
     }
 
     if (startGameRequest.status !== 200) {
       showStatusMessage('Неизвестная ошибка старта игры');
-      showGame();
+      changeState(states.gameReadyErrorState);
       return;
     }
 
@@ -294,25 +339,25 @@ function connectWebSocket() {
     var data = JSON.parse(event.data);
 
     switch (data.action) {
-      case 'add':
+    case 'add':
       {
         addGame(data);
         break;
       }
 
-      case 'remove':
+    case 'remove':
       {
         removeGame(data);
         break;
       }
 
-      case 'startGame':
+    case 'startGame':
       {
         beginGame(data);
         break;
       }
 
-      default:
+    default:
       {
         showStatusMessage(data.error);
         break;
@@ -325,25 +370,25 @@ function connectWebSocket() {
 function onCreateNewGame() {
   'use strict';
   var idRequest;
-  createNewGameButton.disabled = true;
+  changeState(states.creatingNewGameState);
   try {
     idRequest = new XMLHttpRequest();
     idRequest.open('POST', gameUrls.newGame);
     idRequest.send();
   } catch (e) {
-    showStatusMessage(e);
-    createNewGameButton.disabled = false;
+    changeState(states.errorNewGameState);
   }
 
   idRequest.addEventListener('load', function onLoad() {
-    try {
-      myGameId = JSON.parse(idRequest.responseText).yourId;
-      registerOnGame(myGameId);
-      showStatusMessage(myGameId);
-    } catch (e) {
-      showStatusMessage(e);
-      createNewGameButton.disabled = false;
+    var data;
+    if (idRequest.status === 200) {
+      data = JSON.parse(idRequest.responseText);
+      if (data !== null && data.yourId !== undefined && data.yourId !== null) {
+        registerOnGame(data.yourId);
+        return;
+      }
     }
+    changeState(states.errorNewGameState);
   });
 }
 
@@ -351,6 +396,7 @@ function onNewGameClicked() {
   'use strict';
   var surrenderRequest;
 
+  changeState(states.waitActionState);
   surrenderRequest = new XMLHttpRequest();
   surrenderRequest.open('PUT', gameUrls.surrender);
   surrenderRequest.setRequestHeader('Game-ID', myGameId.toString());
