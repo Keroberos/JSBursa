@@ -54,6 +54,11 @@
     student = _.find(allStudents, {id: item.data('studentId')});
     newStatus = item.parent().data('status');
 
+    if (student.status === statuses.removed && newStatus !== student.status) {
+      $(this).sortable('cancel');
+      return;
+    }
+
     function isOk() {
       student.status = newStatus;
       savePositions();
@@ -83,9 +88,12 @@
     redCardList = $('.col-md-4.redcard').find('ul');
     removedList = $('.col-md-4.removed').find('ul');
 
-    activeList.sortable({connectWith: 'ul', update: onDrop, placeholder: 'placeholder'});
-    redCardList.sortable({connectWith: 'ul', update: onDrop, placeholder: 'placeholder'});
-    removedList.sortable({update: onDrop, placeholder: 'placeholder'});
+    $('.row').find('ul').sortable({connectWith: 'ul', update: onDrop, placeholder: 'placeholder'});
+
+    //activeList.sortable({connectWith: 'ul', update: onDrop, placeholder: 'placeholder'});
+    //redCardList.sortable({connectWith: 'ul', update: onDrop, placeholder: 'placeholder'});
+    //removedList.sortable({update: onDrop, placeholder: 'placeholder'});
+
 
     activeList.data('status', statuses.active);
     redCardList.data('status', statuses.redcard);
