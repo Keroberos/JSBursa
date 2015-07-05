@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html ng-app="jsbursa">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="../Homework5/css/index.css">
+    <script src="components/jquery/dist/jquery.js"></script>
+    <script src="components/jqueryui/jquery-ui.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.1/angular.min.js"></script>
+    <script src="index.js"></script>
+</head>
+<body ng-controller="myController">
+<button ng-click="add()">Add</button>
+<button ng-click="delete()">del</button>
+<div style="float:left;">
+    <draggable-list items="students" id="hello"></draggable-list>
+</div>
+<div style="float:left;">
+<draggable-list items="otherstudents" id="hello2"></draggable-list>
+</div>
+</body>
+</html>
